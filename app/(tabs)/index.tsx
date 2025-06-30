@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { getAuth, signOut } from 'firebase/auth';
+import { Button, Platform, StyleSheet, View } from 'react-native';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -7,6 +8,21 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
 export default function HomeScreen() {
+  const handleLogout = () => {
+    const auth = getAuth();
+    signOut(auth)
+      .then(() => {
+        // Sign-out successful.
+        // The onAuthStateChanged listener in _layout.tsx will handle the redirect.
+        console.log('User signed out successfully.');
+      })
+      .catch((error) => {
+        // An error happened.
+        console.error('Sign-out error:', error);
+        alert('Failed to log out. Please try again.');
+      });
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -20,6 +36,9 @@ export default function HomeScreen() {
         <ThemedText type="title">Hello!</ThemedText>
         <HelloWave />
       </ThemedView>
+      <View style={styles.buttonContainer}>
+        <Button title="Log Out" onPress={handleLogout} />
+      </View>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
@@ -60,6 +79,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  buttonContainer: {
+    marginVertical: 16,
   },
   stepContainer: {
     gap: 8,
