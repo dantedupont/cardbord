@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "668359252292",
+    "project_id": "cardbord-4d787",
+    "storage_bucket": "cardbord-4d787.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:668359252292:android:ef1dcc1e36d3b97f559f11",
+        "android_client_info": {
+          "package_name": "com.dantedupont.cardbord"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "668359252292-r4qqio683avkv87hu4a424fi7kfn4var.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dantedupont.cardbord",
+            "certificate_hash": "5c8d0eb9536daf95f53d9b5edff145741c0a49cb"
+          }
+        },
+        {
+          "client_id": "668359252292-e169eqjb9dikbdvsatbgdnm04mup75e5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlRY7yS2NUGMlImsm4ZmyHLMoSspVWsZ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "668359252292-e169eqjb9dikbdvsatbgdnm04mup75e5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "668359252292-rvoe0nnk9gn69rj6pr7070munjo32lq8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dantedupont.cardbord"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
