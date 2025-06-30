@@ -10,7 +10,15 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dantedupont.cardbord"
+      "bundleIdentifier": "com.dantedupont.cardbord",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.668359252292-rvoe0nnk9gn69rj6pr7070munjo32lq8"
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +35,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-build-properties",
       [
         "expo-splash-screen",
         {
