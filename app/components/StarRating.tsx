@@ -62,7 +62,6 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
             name={iconName}
             size={STAR_SIZE}
             color={tempRating >= starNumber - 0.5 ? '#FFD700' : '#d3d3d3'}
-            // --- THE FIX ---
             // This makes the icon "invisible" to touches, so the touch event
             // is registered by the parent View, giving us the correct locationX.
             pointerEvents="none"
