@@ -1,16 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
-import { GestureResponderEvent, PanResponder, PanResponderGestureState, StyleSheet, View } from 'react-native';
+import { GestureResponderEvent, PanResponder, StyleSheet, View } from 'react-native';
 
 const STAR_COUNT = 5;
-const STAR_SIZE = 40;
+const STAR_SIZE = 60;
 
 type StarRatingProps = {
   onRatingChange: (rating: number) => void;
-};
-
-type StarContainerRef = View & {
-  xPosition?: number;
 };
 
 const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
@@ -20,11 +16,11 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        updateRating(gestureState.x0);
+      onPanResponderGrant: (evt: GestureResponderEvent) => {
+        updateRating(evt.nativeEvent.locationX);
       },
-      onPanResponderMove: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        updateRating(gestureState.moveX);
+      onPanResponderMove: (evt: GestureResponderEvent) => {
+        updateRating(evt.nativeEvent.locationX);
       },
       onPanResponderRelease: () => {
         setRating(tempRating);
@@ -34,31 +30,21 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
   ).current;
 
   const updateRating = (xPosition: number) => {
-    const viewX = (starContainerRef.current as StarContainerRef)?.xPosition;
-    if (viewX === undefined) return;
-
     const starWidth = STAR_SIZE;
-    let rawRating = (xPosition - viewX) / starWidth;
+    
+    let rawRating = xPosition / starWidth;
     
     if (rawRating < 0) rawRating = 0;
     if (rawRating > STAR_COUNT) rawRating = STAR_COUNT;
 
-    const newRating = Math.round(rawRating * 2) / 2;
+    const newRating = Math.floor(rawRating * 2 + 0.5) / 2;
     setTempRating(newRating);
   };
 
-  const starContainerRef = useRef<StarContainerRef | null>(null);
-
   return (
     <View
-      ref={starContainerRef}
       style={styles.container}
       {...panResponder.panHandlers}
-      onLayout={(event) => {
-        if (starContainerRef.current) {
-          starContainerRef.current.xPosition = event.nativeEvent.layout.x;
-        }
-      }}
     >
       {[...Array(STAR_COUNT)].map((_, index) => {
         const starNumber = index + 1;
@@ -76,6 +62,10 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
             name={iconName}
             size={STAR_SIZE}
             color={tempRating >= starNumber - 0.5 ? '#FFD700' : '#d3d3d3'}
+            // --- THE FIX ---
+            // This makes the icon "invisible" to touches, so the touch event
+            // is registered by the parent View, giving us the correct locationX.
+            pointerEvents="none"
           />
         );
       })}
