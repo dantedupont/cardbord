@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import { GestureResponderEvent, PanResponder, StyleSheet, View } from 'react-native';
 
@@ -12,34 +13,51 @@ type StarRatingProps = {
 const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
   const [rating, setRating] = useState<number>(0);
   const [tempRating, setTempRating] = useState<number>(0);
+  // --- NEW: Use a ref to track the last rating that triggered a haptic ---
+  const lastHapticRating = useRef<number>(0);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt: GestureResponderEvent) => {
-        updateRating(evt.nativeEvent.locationX);
-      },
-      onPanResponderMove: (evt: GestureResponderEvent) => {
-        updateRating(evt.nativeEvent.locationX);
-      },
-      onPanResponderRelease: () => {
-        setRating(tempRating);
-        onRatingChange(tempRating);
-      },
-    })
-  ).current;
-
-  const updateRating = (xPosition: number) => {
+  const calculateRating = (xPosition: number): number => {
     const starWidth = STAR_SIZE;
-    
     let rawRating = xPosition / starWidth;
     
     if (rawRating < 0) rawRating = 0;
     if (rawRating > STAR_COUNT) rawRating = STAR_COUNT;
 
-    const newRating = Math.floor(rawRating * 2 + 0.5) / 2;
-    setTempRating(newRating);
+    return Math.floor(rawRating * 2 + 0.5) / 2;
   };
+
+  const triggerHaptic = (newRating: number) => {
+    // Only trigger if the new rating is different from the last one that caused a vibration.
+    if (newRating !== lastHapticRating.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Update the ref to the new rating.
+      lastHapticRating.current = newRating;
+    }
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt: GestureResponderEvent) => {
+        const newRating = calculateRating(evt.nativeEvent.locationX);
+        setTempRating(newRating);
+        triggerHaptic(newRating);
+      },
+      onPanResponderMove: (evt: GestureResponderEvent) => {
+        const newRating = calculateRating(evt.nativeEvent.locationX);
+        setTempRating(newRating);
+        triggerHaptic(newRating);
+      },
+      onPanResponderRelease: (evt: GestureResponderEvent) => {
+        const finalRating = calculateRating(evt.nativeEvent.locationX);
+        setRating(finalRating);
+        setTempRating(finalRating);
+        onRatingChange(finalRating);
+        // Reset the haptic tracker on release
+        lastHapticRating.current = finalRating;
+      },
+    })
+  ).current;
 
   return (
     <View
@@ -62,8 +80,6 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
             name={iconName}
             size={STAR_SIZE}
             color={tempRating >= starNumber - 0.5 ? '#FFD700' : '#d3d3d3'}
-            // This makes the icon "invisible" to touches, so the touch event
-            // is registered by the parent View, giving us the correct locationX.
             pointerEvents="none"
           />
         );

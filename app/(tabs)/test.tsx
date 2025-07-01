@@ -1,73 +1,94 @@
-// Filename: e.g., app/(tabs)/onboarding.tsx
-// The test harness now opens a modal to test the StarRating component.
+import * as Haptics from 'expo-haptics';
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+// Define the different haptic options we want to test
+const hapticOptions = [
+  {
+    label: 'Impact - Light',
+    action: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+  },
+  {
+    label: 'Impact - Medium',
+    action: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+  },
+  {
+    label: 'Impact - Heavy',
+    action: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+  },
+  {
+    label: 'Notification - Success',
+    action: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+  },
+  {
+    label: 'Notification - Warning',
+    action: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
+  },
+  {
+    label: 'Notification - Error',
+    action: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+  },
+  {
+    label: 'Selection',
+    action: () => Haptics.selectionAsync(),
+  },
+];
 
-// Import your new RatingModal component
-import RatingModal from '../components/RatingModal'; // Adjust path if needed
-
-export default function StarRatingTestScreen() {
-  const [currentRating, setCurrentRating] = useState(0);
-  // --- NEW: State to control the modal's visibility ---
-  const [isModalVisible, setModalVisible] = useState(false);
-
-  const handleRatingChange = (rating: number) => {
-    console.log("Final rating saved:", rating);
-    setCurrentRating(rating);
-  };
-
+export default function HapticsTestScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Rating Modal Test</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Haptics Test</Text>
+      <Text style={styles.subtitle}>Tap a button to feel the vibration.</Text>
 
-      {/* This button will open the modal */}
-      <Pressable style={styles.openButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.openButtonText}>Rate Gloomhaven</Text>
-      </Pressable>
-
-      <Text style={styles.infoText}>
-        Last saved rating: {currentRating.toFixed(1)}
-      </Text>
-
-      {/* Render the RatingModal */}
-      <RatingModal
-        visible={isModalVisible}
-        onClose={() => setModalVisible(false)}
-        onRate={handleRatingChange}
-        gameTitle="Gloomhaven"
-      />
-    </View>
+      {hapticOptions.map((option, index) => (
+        <Pressable
+          key={index}
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={option.action}
+        >
+          <Text style={styles.buttonText}>{option.label}</Text>
+        </Pressable>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
     padding: 20,
+    paddingTop: 60,
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6c757d',
     marginBottom: 32,
   },
-  openButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 8,
+  button: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    width: '100%',
+    alignItems: 'center',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
-  openButtonText: {
-    color: '#fff',
+  buttonPressed: {
+    backgroundColor: '#f1f3f5',
+  },
+  buttonText: {
     fontSize: 18,
     fontWeight: '600',
-  },
-  infoText: {
-    marginTop: 24,
-    fontSize: 16,
-    color: '#6b7280',
+    color: '#007AFF',
   },
 });
