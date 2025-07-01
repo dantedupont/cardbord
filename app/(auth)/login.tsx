@@ -24,7 +24,7 @@ export default function LoginScreen() {
       const credential = GoogleAuthProvider.credential(id_token);
       signInWithCredential(auth, credential);
     }
-  }, [response]);
+  }, [response, auth]);
 
   const handleLogin = () => {
     signInWithEmailAndPassword(auth, email, password)
