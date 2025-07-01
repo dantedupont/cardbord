@@ -1,21 +1,15 @@
-import { auth } from '../firebase'; // Adjust path if firebase.js is not in the root
-
-// --- NEW: Import the User type from firebase/auth ---
-import { onAuthStateChanged, User } from 'firebase/auth';
-
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// --- REMOVED: The firebaseConfig object and initializeApp call are gone from this file ---
+import { auth } from '../firebase';
+// --- Import the ModalProvider ---
+import { ModalProvider } from './context/ModalContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -23,13 +17,11 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // --- UPDATED: Added the User type for better type safety ---
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setAuthLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // This listener now uses the 'auth' instance we imported from firebase.js
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -38,14 +30,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (isAuthLoading) return; // Don't route until we know the auth state
-
+    if (isAuthLoading) return;
     if (user) {
       router.replace('/(tabs)');
     } else {
       router.replace('/(auth)/login');
     }
-  }, [user, isAuthLoading]);
+  }, [user, isAuthLoading, router]);
   
   if (!loaded || isAuthLoading) {
     return (
@@ -56,13 +47,16 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    // --- Wrap the entire app in the ModalProvider ---
+    <ModalProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </ModalProvider>
   );
 }
