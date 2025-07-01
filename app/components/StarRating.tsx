@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
-import { GestureResponderEvent, PanResponder, PanResponderGestureState, View } from 'react-native';
+import { GestureResponderEvent, PanResponder, PanResponderGestureState, StyleSheet, View } from 'react-native';
 
 const STAR_COUNT = 5;
 const STAR_SIZE = 40;
@@ -52,7 +52,7 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
   return (
     <View
       ref={starContainerRef}
-      className="flex-row items-center justify-center"
+      style={styles.container}
       {...panResponder.panHandlers}
       onLayout={(event) => {
         if (starContainerRef.current) {
@@ -75,12 +75,20 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
             key={starNumber}
             name={iconName}
             size={STAR_SIZE}
-            color={tempRating >= starNumber - 0.5 ? '#facc15' : '#d1d5db'} // yellow-400 and gray-300
+            color={tempRating >= starNumber - 0.5 ? '#FFD700' : '#d3d3d3'}
           />
         );
       })}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 export default StarRating;
