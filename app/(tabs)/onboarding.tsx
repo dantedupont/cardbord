@@ -1,59 +1,55 @@
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { db } from '../../firebase';
+import { db } from '../../firebase'; // Adjust path if needed
 
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+// --- NEW: Import Image component ---
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 
-
-
-// --- NEW: Define a type for our game object for better type safety ---
+// --- UPDATED: Add optional imageUrl to the type ---
 type Game = {
   id: string;
   name: string;
-  // Add other game properties here if needed
+  usersRated: number;
+  imageUrl?: string; // It's optional because not all games will have it yet
 };
 
 export default function OnboardingSanityCheck() {
-  // --- FIX: Explicitly type the state to allow for string or null ---
-  const [game, setGame] = useState<Game | null>(null);
+  const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // This async function will run once when the component mounts.
-    const fetchOneGame = async () => {
+    const fetchTopGames = async () => {
       try {
-        // 1. Create a very simple query to get just one document from the 'games' collection.
         const gamesRef = collection(db, 'games');
-        const sanityCheckQuery = query(gamesRef, limit(1));
+        const topGamesQuery = query(
+          gamesRef,
+          orderBy('usersRated', 'desc'),
+          limit(5)
+        );
 
-        // 2. Execute the query.
-        const querySnapshot = await getDocs(sanityCheckQuery);
+        const querySnapshot = await getDocs(topGamesQuery);
 
-        // 3. Check if we got any results.
         if (querySnapshot.empty) {
           setError("No games found in the database.");
         } else {
-          // 4. If we got a result, grab the very first document.
-          const firstGameDoc = querySnapshot.docs[0];
-          // 5. Set its data in our state so we can display it.
-          setGame({ id: firstGameDoc.id, ...firstGameDoc.data() } as Game);
+          const topGamesData: Game[] = [];
+          querySnapshot.forEach((doc) => {
+            topGamesData.push({ id: doc.id, ...doc.data() } as Game);
+          });
+          setGames(topGamesData);
         }
       } catch (err) {
         console.error("Firestore fetch failed:", err);
         setError("Failed to fetch data. Check your Firestore rules and connection.");
       } finally {
-        // 6. Whether it succeeded or failed, we're done loading.
         setLoading(false);
       }
     };
 
-    fetchOneGame();
-  }, []); // The empty array ensures this effect runs only once.
+    fetchTopGames();
+  }, []);
 
-  // --- UI Rendering ---
-
-  // While the data is being fetched, show a loading spinner.
   if (loading) {
     return (
       <View style={styles.container}>
@@ -63,7 +59,6 @@ export default function OnboardingSanityCheck() {
     );
   }
 
-  // If there was an error, display it.
   if (error) {
     return (
       <View style={styles.container}>
@@ -73,13 +68,28 @@ export default function OnboardingSanityCheck() {
     );
   }
 
-  // If the fetch was successful, display the game's name.
   return (
     <View style={styles.container}>
-      <Text style={styles.successText}>Success! Connected to Firestore.</Text>
-      <Text style={styles.gameTitle}>Fetched Game:</Text>
-      <Text style={styles.gameName}>{game?.name}</Text>
-      <Text style={styles.gameId}>(ID: {game?.id})</Text>
+      <Text style={styles.successText}>Success! Fetched Top 5 Games.</Text>
+      <FlatList
+        data={games}
+        keyExtractor={(item) => item.id}
+        // --- UPDATED: renderItem now includes the Image ---
+        renderItem={({ item }) => (
+          <View style={styles.gameItem}>
+            {item.imageUrl ? (
+              <Image source={{ uri: item.imageUrl }} style={styles.gameImage} />
+            ) : (
+              <View style={styles.imagePlaceholder} />
+            )}
+            <View style={styles.gameTextContainer}>
+              <Text style={styles.gameName}>{item.name}</Text>
+              <Text style={styles.gameInfo}>Ratings: {item.usersRated}</Text>
+            </View>
+          </View>
+        )}
+        style={styles.list}
+      />
     </View>
   );
 }
@@ -89,7 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingTop: 60,
     backgroundColor: '#f8f9fa',
   },
   statusText: {
@@ -110,19 +120,45 @@ const styles = StyleSheet.create({
     color: '#28a745',
     marginBottom: 20,
   },
-  gameTitle: {
-    fontSize: 18,
-    color: '#6c757d',
+  list: {
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  gameItem: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 10,
+    borderColor: '#eee',
+    borderWidth: 1,
+    // --- NEW: Use flexDirection to place image and text side-by-side ---
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  // --- NEW: Styles for the image and its container ---
+  gameImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 4,
+    marginRight: 15,
+  },
+  imagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 4,
+    marginRight: 15,
+    backgroundColor: '#e9ecef',
+  },
+  gameTextContainer: {
+    flex: 1, // Allows text to take up remaining space
   },
   gameName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#212529',
-    marginTop: 4,
   },
-  gameId: {
+  gameInfo: {
     fontSize: 14,
-    color: '#adb5bd',
-    marginTop: 2,
+    color: '#6c757d',
+    marginTop: 4,
   },
 });
