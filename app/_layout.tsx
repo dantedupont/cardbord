@@ -1,28 +1,21 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../firebase'; // Adjust path if firebase.js is not in the root
+
+// --- NEW: Import the User type from firebase/auth ---
+import { onAuthStateChanged, User } from 'firebase/auth';
+
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-// --- NEW: FIREBASE CONFIG & INITIALIZATION ---
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// --- REMOVED: The firebaseConfig object and initializeApp call are gone from this file ---
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -30,12 +23,13 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // --- NEW: AUTH STATE AND ROUTER LOGIC ---
+  // --- UPDATED: Added the User type for better type safety ---
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setAuthLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    // This listener now uses the 'auth' instance we imported from firebase.js
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -47,16 +41,13 @@ export default function RootLayout() {
     if (isAuthLoading) return; // Don't route until we know the auth state
 
     if (user) {
-      // If user is signed in, send them to the main app.
       router.replace('/(tabs)');
     } else {
-      // If user is not signed in, send them to the login screen.
       router.replace('/(auth)/login');
     }
   }, [user, isAuthLoading]);
-
+  
   if (!loaded || isAuthLoading) {
-    // Show a loading screen while fonts are loading OR we are waiting for Firebase
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
