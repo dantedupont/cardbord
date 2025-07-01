@@ -42,3 +42,7 @@ android/app/debug.keystore
 *.tsbuildinfo
 
 app-example
+
+serviceAccountKey.json
+seed.js
+bg_seed_data.json
