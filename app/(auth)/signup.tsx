@@ -21,7 +21,6 @@ export default function SignupScreen() {
     androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
   });
 
-  // This useEffect handles the response from Google Sign-In
   useEffect(() => {
     const handleGoogleResponse = async () => {
       if (response?.type === 'success') {
@@ -39,14 +38,13 @@ export default function SignupScreen() {
           if (!userDoc.exists()) {
             const randomString = Math.random().toString(36).substring(2, 7);
             const defaultUsername = `user_${randomString}`;
-            const avatarUrl = `https://api.dicebear.com/8.x/identicon/svg?seed=${user.uid}&scale=90`;
-
-            // For Google sign-up, we create a default profile. They can change their username later.
+            
             await setDoc(userDocRef, {
               uid: user.uid,
               email: user.email,
               username: defaultUsername,
-              avatarUrl: avatarUrl,
+              // --- UPDATED: Set avatarUrl to an empty string ---
+              avatarUrl: '', 
               createdAt: new Date(),
             });
           }
@@ -63,7 +61,6 @@ export default function SignupScreen() {
     handleGoogleResponse();
   }, [response]);
 
-  // This function handles sign-up with email, password, and a chosen username
   const handleEmailSignup = async () => {
     if (!email || !password || !username) {
       Alert.alert("Error", "Please fill in all fields.");
@@ -78,7 +75,6 @@ export default function SignupScreen() {
     setLoading(true);
 
     try {
-      // 1. Check if the username is already taken
       const usernameDocRef = doc(db, "usernames", username.toLowerCase());
       const usernameDoc = await getDoc(usernameDocRef);
       if (usernameDoc.exists()) {
@@ -87,32 +83,24 @@ export default function SignupScreen() {
         return;
       }
 
-      // 2. If username is available, create the user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 3. Create the user profile and reserve the username in a single batch operation
       const userProfileRef = doc(db, "users", user.uid);
-      const avatarUrl = `https://api.dicebear.com/8.x/identicon/svg?seed=${user.uid}&scale=90`;
-
       const batch = writeBatch(db);
       
-      // Set the main user profile document
       batch.set(userProfileRef, {
         uid: user.uid,
         email: user.email,
         username: username,
-        avatarUrl: avatarUrl,
+        avatarUrl: '',
         createdAt: new Date(),
       });
 
-      // Set the username reservation document
       batch.set(usernameDocRef, { uid: user.uid });
 
       await batch.commit();
       
-      console.log('User profile and username reservation created!');
-
     } catch (error: any) {
       Alert.alert("Signup Failed", error.message);
     } finally {
@@ -198,13 +186,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
   },
-  // --- NEW: Style for the hint text ---
   inputHint: {
     fontSize: 12,
     color: '#6c757d',
     textAlign: 'right',
-    marginTop: -12, // Pulls the text up closer to the input field
-    marginBottom: 16, // Adds space below it before the button
+    marginTop: -12,
+    marginBottom: 16,
     paddingHorizontal: 8,
   },
   button: {

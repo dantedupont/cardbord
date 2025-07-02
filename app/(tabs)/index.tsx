@@ -1,30 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc, writeBatch } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SvgUri } from 'react-native-svg';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import MeepleAvatar from '../../components/MeepleAvatar';
 import { auth, db } from '../../firebase';
 
 type UserProfile = {
   username: string;
-  avatarUrl: string;
   email: string;
+  avatarUrl: string; 
 };
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser); // Store the whole user object
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const userProfile = userDoc.data() as UserProfile;
@@ -75,26 +77,19 @@ export default function ProfileScreen() {
     }
   };
 
-  const Avatar = ({ uri }: { uri: string }) => {
-    const isSvg = uri.includes('.svg');
-    if (isSvg) {
-      return <SvgUri width="100%" height="100%" uri={uri} />;
-    }
-    return <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />;
-  };
-
   if (loading) {
     return <View style={styles.container}><ActivityIndicator size="large" /></View>;
   }
 
   return (
     <View style={styles.container}>
-      {profile ? (
+      {profile && user ? (
         <>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <Avatar uri={profile.avatarUrl} />
+              <MeepleAvatar seed={user.uid} size={112} />
             </View>
+            
             {editMode ? (
               <TextInput style={styles.usernameInput} value={newUsername} onChangeText={setNewUsername} autoCapitalize="none" />
             ) : (
@@ -108,13 +103,11 @@ export default function ProfileScreen() {
             <Text style={styles.email}>{profile.email}</Text>
           </View>
 
-          {/* --- UPDATED: The content area now has a button --- */}
           <View style={styles.contentArea}>
             <Pressable style={styles.menuButton} onPress={() => router.push('/my-ratings')}>
               <Text style={styles.menuButtonText}>My Ratings</Text>
               <Ionicons name="chevron-forward" size={24} color="#6c757d" />
             </Pressable>
-            {/* We can add more buttons here later for "Diary", etc. */}
           </View>
 
           {editMode ? (
@@ -160,6 +153,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#e9ecef',
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   usernameContainer: {
     flexDirection: 'row',
@@ -195,7 +190,6 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
   },
-  // --- NEW: Styles for the menu button ---
   menuButton: {
     backgroundColor: '#fff',
     paddingVertical: 16,
