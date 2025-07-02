@@ -1,6 +1,8 @@
 import * as Haptics from 'expo-haptics';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { auth, db } from '../../firebase'; // Adjust path as needed
 
 // Define the different haptic options we want to test
 const hapticOptions = [
@@ -35,6 +37,28 @@ const hapticOptions = [
 ];
 
 export default function HapticsTestScreen() {
+  const handleFirestoreTest = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert('Not logged in', 'You must be signed in to fetch ratings.');
+      return;
+    }
+
+    try {
+      console.log('Current User:', auth.currentUser?.uid);
+      const q = query(
+        collection(db, 'user_ratings'),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      console.log('Fetched ratings:', snapshot.docs.map(doc => doc.data()));
+      Alert.alert('Success', `Fetched ${snapshot.size} ratings.`);
+    } catch (err: any) {
+      console.error('Firestore read error:', err);
+      Alert.alert('Error', err.message || 'Failed to fetch ratings.');
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Haptics Test</Text>
@@ -52,6 +76,20 @@ export default function HapticsTestScreen() {
           <Text style={styles.buttonText}>{option.label}</Text>
         </Pressable>
       ))}
+
+      {/* --- Firestore Test Button --- */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.button,
+          { backgroundColor: '#343a40' },
+          pressed && { backgroundColor: '#495057' },
+        ]}
+        onPress={handleFirestoreTest}
+      >
+        <Text style={[styles.buttonText, { color: '#fff' }]}>
+          Test Firestore Rating Fetch
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }

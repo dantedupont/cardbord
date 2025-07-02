@@ -1,18 +1,22 @@
-import { collection, doc, getDocs, limit, orderBy, query, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc } from 'firebase/firestore';
+import throttle from 'lodash/throttle';
 import { useEffect, useState } from 'react';
-import { auth, db } from '../../firebase'; // Adjust path if needed
+import { auth, db } from '../../firebase';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { onAuthStateChanged } from 'firebase/auth';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useModal } from '../context/ModalContext';
 
-// Define a type for our game object
 type Game = {
   id: string;
   name: string;
   usersRated: number;
   imageUrl?: string;
-  userRating?: number; 
+  userRating?: number | null; 
 };
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export default function OnboardingScreen() {
   const [games, setGames] = useState<Game[]>([]);
@@ -20,45 +24,86 @@ export default function OnboardingScreen() {
   const [error, setError] = useState<string | null>(null);
   const { showModal } = useModal();
 
-  // Fetch the top 5 games when the component mounts
   useEffect(() => {
-    const fetchTopGames = async () => {
-      try {
-        const gamesRef = collection(db, 'games');
-        const topGamesQuery = query(gamesRef, orderBy('usersRated', 'desc'), limit(5));
-        const querySnapshot = await getDocs(topGamesQuery);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const { uid } = user;
+        setLoading(true);
+        try {
+          // --- NEW: Caching Logic ---
+          const cachedGamesJSON = await AsyncStorage.getItem('topGames');
+          const cachedTimestampJSON = await AsyncStorage.getItem('topGamesTimestamp');
+          let topGamesData: Game[] = [];
 
-        if (querySnapshot.empty) {
-          setError("No games found in the database.");
-        } else {
-          const topGamesData: Game[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Game));
-          setGames(topGamesData);
+          if (cachedGamesJSON && cachedTimestampJSON) {
+            const timestamp = JSON.parse(cachedTimestampJSON);
+            const isCacheValid = (Date.now() - timestamp) < CACHE_DURATION;
+            if (isCacheValid) {
+              console.log("Loading top games from cache.");
+              topGamesData = JSON.parse(cachedGamesJSON);
+            }
+          }
+
+          // If cache is invalid or doesn't exist, fetch from Firestore
+          if (topGamesData.length === 0) {
+            console.log("Fetching top games from Firestore...");
+            const gamesRef = collection(db, 'games');
+            const topGamesQuery = query(gamesRef, orderBy('usersRated', 'desc'), limit(5));
+            const gamesSnapshot = await getDocs(topGamesQuery);
+            topGamesData = gamesSnapshot.docs.map(doc => ({
+              ...(doc.data() as Game),
+              id: doc.id,
+            }));
+            // Update the cache
+            await AsyncStorage.setItem('topGames', JSON.stringify(topGamesData));
+            await AsyncStorage.setItem('topGamesTimestamp', JSON.stringify(Date.now()));
+          }
+    
+          // --- Fetch user-specific ratings (this is always done fresh) ---
+          const ratingPromises = topGamesData.map(game =>
+            getDoc(doc(db, 'users', uid, 'ratings', game.id))
+          );
+          const ratingDocs = await Promise.all(ratingPromises);
+          const ratingsMap = new Map<string, number>();
+          ratingDocs.forEach((docSnap, index) => {
+            if (docSnap.exists()) {
+              ratingsMap.set(topGamesData[index].id, docSnap.data().rating);
+            }
+          });
+    
+          // Merge ratings into the game data
+          const mergedGames = topGamesData.map(game => ({
+            ...game,
+            userRating: ratingsMap.get(game.id) ?? null,
+          }));
+    
+          setGames(mergedGames);
+        } catch (err) {
+          console.error("Error fetching games or ratings:", err);
+          setError("Failed to fetch data.");
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error("Firestore fetch failed:", err);
-        setError("Failed to fetch data.");
-      } finally {
+      } else {
+        setGames([]);
         setLoading(false);
       }
-    };
+    });
 
-    fetchTopGames();
+    return () => unsubscribe();
   }, []);
-
-  const handleSaveRating = async (gameId: string, rating: number) => {
+  
+  const throttledSaveRating = throttle(async (gameId: string, rating: number) => {
     if (!auth.currentUser) return;
     const { uid } = auth.currentUser;
 
     try {
-      const ratingDocRef = doc(db, 'user_ratings', `${uid}_${gameId}`);
+      const ratingDocRef = doc(db, 'users', uid, 'ratings', gameId);
       await setDoc(ratingDocRef, {
-        userId: uid,
-        gameId: gameId,
         rating: rating,
         createdAt: new Date(),
       });
 
-      // Update the local state to show the new rating in the UI instantly
       setGames(prevGames =>
         prevGames.map(g =>
           g.id === gameId ? { ...g, userRating: rating } : g
@@ -67,7 +112,7 @@ export default function OnboardingScreen() {
     } catch (error) {
       console.error("Error saving rating:", error);
     }
-  };
+  }, 1000);
 
   if (loading) {
     return (
@@ -94,8 +139,7 @@ export default function OnboardingScreen() {
         data={games}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          // --- UPDATED: onPress now calls showModal with the game and the save handler ---
-          <Pressable onPress={() => showModal(item, (rating) => handleSaveRating(item.id, rating))} style={styles.gameItem}>
+          <Pressable onPress={() => showModal(item, (rating) => throttledSaveRating(item.id, rating))} style={styles.gameItem}>
             {item.imageUrl ? (
               <Image source={{ uri: item.imageUrl }} style={styles.gameImage} />
             ) : (
@@ -113,7 +157,6 @@ export default function OnboardingScreen() {
         )}
         style={styles.list}
       />
-
     </View>
   );
 }
