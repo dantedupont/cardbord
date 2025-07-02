@@ -39,7 +39,7 @@ export default function SignupScreen() {
           if (!userDoc.exists()) {
             const randomString = Math.random().toString(36).substring(2, 7);
             const defaultUsername = `user_${randomString}`;
-            const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${user.uid}`;
+            const avatarUrl = `https://api.dicebear.com/8.x/identicon/svg?seed=${user.uid}&scale=90`;
 
             // For Google sign-up, we create a default profile. They can change their username later.
             await setDoc(userDocRef, {
@@ -93,7 +93,7 @@ export default function SignupScreen() {
 
       // 3. Create the user profile and reserve the username in a single batch operation
       const userProfileRef = doc(db, "users", user.uid);
-      const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${user.uid}`;
+      const avatarUrl = `https://api.dicebear.com/8.x/identicon/svg?seed=${user.uid}&scale=90`;
 
       const batch = writeBatch(db);
       
