@@ -8,10 +8,12 @@ type Game = {
   imageUrl?: string;
 };
 
+// Define a type for the onRate function
 type OnRateCallback = (rating: number) => void;
 
 // Define the shape of our context's state and functions
 type ModalContextType = {
+  // showModal now accepts the callback
   showModal: (game: Game, onRate: OnRateCallback) => void;
   hideModal: () => void;
 };
@@ -31,12 +33,13 @@ export const useModal = () => {
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  // --- NEW: State to hold the current onRate callback ---
-  const [onRateCallback, setOnRateCallback] = useState<OnRateCallback | null>(null);
+  // State to hold the current onRate callback
+  const [onRateCallback, setOnRateCallback] = useState<{ fn: OnRateCallback } | null>(null);
 
   const showModal = (game: Game, onRate: OnRateCallback) => {
     setSelectedGame(game);
-    setOnRateCallback(() => onRate);
+    // Store the callback function in a way that avoids stale closures
+    setOnRateCallback({ fn: onRate });
     setModalVisible(true);
   };
 
@@ -57,7 +60,8 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
         <RatingModal
           visible={modalVisible}
           onClose={hideModal}
-          onRate={onRateCallback}
+          // --- FIX: Pass the stored callback function correctly ---
+          onRate={onRateCallback.fn}
           gameTitle={selectedGame.name}
           imageUrl={selectedGame.imageUrl}
         />
