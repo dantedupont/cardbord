@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 50,
     marginVertical: 20,
+    marginBottom: 100,
     alignSelf: 'center',
   },
   doneButtonText: {

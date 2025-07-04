@@ -20,7 +20,6 @@ export default function LoginScreen() {
     androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
   });
 
-  // --- UPDATED: This useEffect now handles both login and profile creation for Google users ---
   useEffect(() => {
     const handleGoogleResponse = async () => {
       if (response?.type === 'success') {
@@ -104,6 +103,10 @@ export default function LoginScreen() {
           placeholderTextColor="#888"
         />
 
+       <Pressable style={styles.forgotPasswordButton} onPress={() => router.push('/(auth)/forgot-password')}>
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </Pressable>
+
         <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
         </Pressable>
@@ -149,6 +152,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     backgroundColor: '#fff',
+  },
+  forgotPasswordButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
   button: {
     height: 50,
