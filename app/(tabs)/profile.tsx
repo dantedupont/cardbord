@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { onAuthStateChanged, sendEmailVerification, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, sendEmailVerification, User } from 'firebase/auth';
 import { doc, getDoc, writeBatch } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MeepleAvatar from '../../components/MeepleAvatar';
 import { auth, db } from '../../firebase';
+// --- NEW: Import Stack for header configuration ---
+import { Stack, useRouter } from 'expo-router';
 
 type UserProfile = {
   username: string;
@@ -45,18 +46,9 @@ export default function ProfileScreen() {
   const handleResendVerification = () => {
     if (user) {
       sendEmailVerification(user)
-        .then(() => {
-          Alert.alert("Email Sent", "A new verification link has been sent to your email address.");
-        })
-        .catch((error) => {
-          console.error("Resend Verification Error:", error);
-          Alert.alert("Error", "Could not send verification email. Please try again later.");
-        });
+        .then(() => Alert.alert("Email Sent", "A new verification link has been sent..."))
+        .catch((error) => Alert.alert("Error", "Could not send verification email..."));
     }
-  };
-
-  const handleSignOut = () => {
-    signOut(auth).catch((error) => console.error("Sign Out Error", error));
   };
 
   const handleSaveProfile = async () => {
@@ -97,17 +89,25 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Profile',
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/settings')}>
+              <Ionicons name="settings-outline" size={24} color="#007AFF" />
+            </Pressable>
+          ),
+        }}
+      />
+
       {profile && user ? (
         <>
           {!user.emailVerified && isBannerVisible && (
             <View style={styles.banner}>
               <View style={styles.bannerTextContainer}>
-                <Text style={styles.bannerText}>
-                  Please verify your email to unlock all features.
-                </Text>
-                <Pressable onPress={handleResendVerification}>
-                  <Text style={styles.resendText}>Resend Email</Text>
-                </Pressable>
+                <Text style={styles.bannerText}>Please verify your email to unlock all features.</Text>
+                <Pressable onPress={handleResendVerification}><Text style={styles.resendText}>Resend Email</Text></Pressable>
               </View>
               <Pressable onPress={() => setBannerVisible(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={20} color="#856404" />
@@ -138,21 +138,22 @@ export default function ProfileScreen() {
               <Text style={styles.menuButtonText}>My Ratings</Text>
               <Ionicons name="chevron-forward" size={24} color="#6c757d" />
             </Pressable>
+            <Pressable 
+              style={styles.menuButton} 
+              onPress={() => router.push('/game/30549')}
+            >
+              <Text style={styles.menuButtonText}>Test Game Page (Pandemic)</Text>
+              <Ionicons name="chevron-forward" size={24} color="#6c757d" />
+            </Pressable>
           </View>
 
-          {editMode ? (
+          {editMode && (
             <View style={styles.editButtonsContainer}>
-              <Pressable style={[styles.buttonBase, styles.cancelButton]} onPress={() => setEditMode(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
+              <Pressable style={[styles.buttonBase, styles.cancelButton]} onPress={() => setEditMode(false)}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
               <Pressable style={[styles.buttonBase, styles.saveButton]} onPress={handleSaveProfile} disabled={isSaving}>
                 {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Save</Text>}
               </Pressable>
             </View>
-          ) : (
-            <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-              <Text style={styles.signOutButtonText}>Sign Out</Text>
-            </Pressable>
           )}
         </>
       ) : (
