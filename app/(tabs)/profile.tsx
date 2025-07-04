@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, sendEmailVerification, signOut, User } from 'firebase/auth';
 import { doc, getDoc, writeBatch } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -20,11 +20,12 @@ export default function ProfileScreen() {
   const [editMode, setEditMode] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isBannerVisible, setBannerVisible] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser); // Store the whole user object
+      setUser(currentUser);
       if (currentUser) {
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
@@ -41,12 +42,25 @@ export default function ProfileScreen() {
     return () => unsubscribe();
   }, []);
 
+  const handleResendVerification = () => {
+    if (user) {
+      sendEmailVerification(user)
+        .then(() => {
+          Alert.alert("Email Sent", "A new verification link has been sent to your email address.");
+        })
+        .catch((error) => {
+          console.error("Resend Verification Error:", error);
+          Alert.alert("Error", "Could not send verification email. Please try again later.");
+        });
+    }
+  };
+
   const handleSignOut = () => {
     signOut(auth).catch((error) => console.error("Sign Out Error", error));
   };
 
   const handleSaveProfile = async () => {
-    if (!profile || !auth.currentUser) return;
+    if (!profile || !user) return;
     if (newUsername === profile.username) {
       setEditMode(false);
       return;
@@ -61,11 +75,11 @@ export default function ProfileScreen() {
         return;
       }
       const batch = writeBatch(db);
-      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      const userDocRef = doc(db, 'users', user.uid);
       batch.update(userDocRef, { username: newUsername });
       const oldUsernameRef = doc(db, 'usernames', profile.username.toLowerCase());
       batch.delete(oldUsernameRef);
-      batch.set(newUsernameRef, { uid: auth.currentUser.uid });
+      batch.set(newUsernameRef, { uid: user.uid });
       await batch.commit();
       setProfile(prev => prev ? { ...prev, username: newUsername } : null);
       setEditMode(false);
@@ -85,6 +99,22 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       {profile && user ? (
         <>
+          {!user.emailVerified && isBannerVisible && (
+            <View style={styles.banner}>
+              <View style={styles.bannerTextContainer}>
+                <Text style={styles.bannerText}>
+                  Please verify your email to unlock all features.
+                </Text>
+                <Pressable onPress={handleResendVerification}>
+                  <Text style={styles.resendText}>Resend Email</Text>
+                </Pressable>
+              </View>
+              <Pressable onPress={() => setBannerVisible(false)} style={styles.closeButton}>
+                <Ionicons name="close" size={20} color="#856404" />
+              </Pressable>
+            </View>
+          )}
+
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <MeepleAvatar seed={user.uid} size={112} />
@@ -109,11 +139,6 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={24} color="#6c757d" />
             </Pressable>
           </View>
-
-          {/* testing game page */}
-          <Pressable onPress={() => router.push('/game/30549')}>
-            <Text>Test Game Page</Text>
-          </Pressable>
 
           {editMode ? (
             <View style={styles.editButtonsContainer}>
@@ -141,8 +166,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 80,
+    paddingTop: 60,
     backgroundColor: '#f8f9fa',
+  },
+  banner: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffeeba',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    width: '90%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bannerTextContainer: {
+    flex: 1,
+  },
+  bannerText: {
+    color: '#856404',
+    fontSize: 14,
+  },
+  resendText: {
+    color: '#856404',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+    marginTop: 4,
+  },
+  closeButton: {
+    paddingLeft: 10,
   },
   profileHeader: {
     alignItems: 'center',

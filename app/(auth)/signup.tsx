@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, signInWithCredential } from 'firebase/auth';
+import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 import { debounce } from 'lodash';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
@@ -55,8 +55,41 @@ export default function SignupScreen() {
 
   useEffect(() => {
     const handleGoogleResponse = async () => {
-      // ... (Google response logic remains the same)
+      if (response?.type === 'success') {
+        setLoading(true);
+        const { id_token } = response.params;
+        const credential = GoogleAuthProvider.credential(id_token);
+        
+        try {
+          const userCredential = await signInWithCredential(auth, credential);
+          const user = userCredential.user;
+
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (!userDoc.exists()) {
+            const randomString = Math.random().toString(36).substring(2, 7);
+            const defaultUsername = `user_${randomString}`;
+            
+            await setDoc(userDocRef, {
+              uid: user.uid,
+              email: user.email,
+              username: defaultUsername,
+              avatarUrl: '', 
+              createdAt: new Date(),
+              hasCompletedOnboarding: false, 
+            });
+          }
+        } catch (error: any) {
+          Alert.alert("Sign-In Failed", "Could not sign in with Google.");
+        } finally {
+          setLoading(false);
+        }
+      } else if (response?.type === 'error') {
+        Alert.alert("Sign-In Failed", "An error occurred during Google sign-in.");
+      }
     };
+    
     handleGoogleResponse();
   }, [response]);
 
@@ -65,7 +98,6 @@ export default function SignupScreen() {
       Alert.alert("Error", "Please fill in all fields.");
       return;
     }
-    
     if (password.length < 6) {
       Alert.alert("Weak Password", "The password must be at least 6 characters long.");
       return;
@@ -79,6 +111,8 @@ export default function SignupScreen() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
+      await sendEmailVerification(user);
 
       const userProfileRef = doc(db, "users", user.uid);
       const usernameDocRef = doc(db, "usernames", username.toLowerCase());
@@ -94,6 +128,12 @@ export default function SignupScreen() {
       });
       batch.set(usernameDocRef, { uid: user.uid });
       await batch.commit();
+
+      // --- NEW: Inform the user to check their email ---
+      Alert.alert(
+        "Account Created!",
+        "Please check your inbox to verify your email address."
+      );
       
     } catch (error: any) {
       Alert.alert("Signup Failed", error.message);
@@ -113,7 +153,7 @@ export default function SignupScreen() {
       case 'short':
         return <Text style={[styles.feedbackText, styles.errorText]}>Username must be at least 3 characters.</Text>;
       default:
-        return null; // 'idle' or other cases
+        return null;
     }
   };
 
