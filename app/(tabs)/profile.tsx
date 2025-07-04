@@ -110,6 +110,11 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
+          {/* testing game page */}
+          <Pressable onPress={() => router.push('/game/30549')}>
+            <Text>Test Game Page</Text>
+          </Pressable>
+
           {editMode ? (
             <View style={styles.editButtonsContainer}>
               <Pressable style={[styles.buttonBase, styles.cancelButton]} onPress={() => setEditMode(false)}>

@@ -29,11 +29,17 @@ const MeepleAvatar: React.FC<MeepleAvatarProps> = ({ seed, size = 200 }) => {
 
   const properties = useMemo(() => {
     const colorSchemes = [
-      { body: '#FF6B6B', accent: '#4ECDC4' }, { body: '#45B7D1', accent: '#F7DC6F' },
-      { body: '#BB8FCE', accent: '#85C1E2' }, { body: '#52BE80', accent: '#F8C471' },
-      { body: '#EC7063', accent: '#A9DFBF' }, { body: '#5DADE2', accent: '#F9E79F' },
-      { body: '#AF7AC5', accent: '#ABEBC6' }, { body: '#48C9B0', accent: '#F5B7B1' },
-      { body: '#EB984E', accent: '#85929E' }, { body: '#73C6B6', accent: '#F1948A' }
+      // Warm Dominant
+      { body: '#FF6B6B', accent: '#4ECDC4' }, // Red / Teal
+      { body: '#EC7063', accent: '#A9DFBF' }, // Salmon / Mint
+      { body: '#F08080', accent: '#ADD8E6' }, // Light Coral / Light Blue
+      { body: '#FFA07A', accent: '#20B2AA' }, // Light Salmon / Sea Green
+      { body: '#FFD700', accent: '#6A5ACD' }, // Gold / Slate Blue
+      { body: '#DAA520', accent: '#B0C4DE' }, // Goldenrod / Light Steel Blue
+      { body: '#CD5C5C', accent: '#E0FFFF' }, // Indian Red / Light Cyan
+      { body: '#45B7D1', accent: '#F7DC6F' }, // Blue / Yellow
+      { body: '#5DADE2', accent: '#F9E79F' }, // Lighter Blue / Light Yellow
+      { body: '#52BE80', accent: '#F8C471' }, // Green / Orange-Yellow
     ];
     const colors = colorSchemes[hash % colorSchemes.length];
 
@@ -181,15 +187,7 @@ const MeepleAvatar: React.FC<MeepleAvatarProps> = ({ seed, size = 200 }) => {
         <G transform="translate(0, -15)">
           {renderPattern()}
           <Path
-            d={`M 160 40 C ${160 + 30 * properties.bodyWidth} 40 ${160 + 45 * properties.bodyWidth} 65 ${160 + 45 * properties.bodyWidth} 95 
-                C ${160 + 45 * properties.bodyWidth} 100 ${160 + 75} 115 ${160 + 95} 130 C ${160 + 105} 138 ${160 + 110} 142 ${160 + 110} 145 
-                C ${160 + 115} 155 ${160 + 110} 165 ${160 + 100} 170 C ${160 + 90} 172 ${160 + 80} 170 ${160 + 70} 167 
-                C ${160 + 50 * properties.bodyWidth} 165 ${160 + 48 * properties.bodyWidth} 163 ${160 + 50 * properties.bodyWidth} 165 
-                L ${160 + 85 * properties.bodyWidth} 290 L ${160 + 12} 290 L ${160 + 5} 245 L ${160 - 5} 245 L ${160 - 12} 290 L ${160 - 85 * properties.bodyWidth} 290 
-                L ${160 - 50 * properties.bodyWidth} 165 C ${160 - 48 * properties.bodyWidth} 163 ${160 - 50 * properties.bodyWidth} 165 ${160 - 70} 167 
-                C ${160 - 80} 170 ${160 - 90} 172 ${160 - 100} 170 C ${160 - 110} 165 ${160 - 115} 155 ${160 - 110} 145 C ${160 - 110} 142 ${160 - 105} 138 ${160 - 95} 130 
-                C ${160 - 75} 115 ${160 - 45 * properties.bodyWidth} 100 ${160 - 45 * properties.bodyWidth} 95 
-                C ${160 - 45 * properties.bodyWidth} 65 ${160 - 30 * properties.bodyWidth} 40 160 40 Z`}
+            d={`M 160 40 C ${160 + 30 * properties.bodyWidth} 40 ${160 + 45 * properties.bodyWidth} 65 ${160 + 45 * properties.bodyWidth} 95 C ${160 + 45 * properties.bodyWidth} 100 ${160 + 75} 115 ${160 + 95} 130 C ${160 + 105} 138 ${160 + 110} 142 ${160 + 110} 145 C ${160 + 115} 155 ${160 + 110} 165 ${160 + 100} 170 C ${160 + 90} 172 ${160 + 80} 170 ${160 + 70} 167 C ${160 + 50 * properties.bodyWidth} 165 ${160 + 48 * properties.bodyWidth} 163 ${160 + 50 * properties.bodyWidth} 165 L ${160 + 85 * properties.bodyWidth} 290 L ${160 + 12} 290 L ${160 + 5} 245 L ${160 - 5} 245 L ${160 - 12} 290 L ${160 - 85 * properties.bodyWidth} 290 L ${160 - 50 * properties.bodyWidth} 165 C ${160 - 48 * properties.bodyWidth} 163 ${160 - 50 * properties.bodyWidth} 165 ${160 - 70} 167 C ${160 - 80} 170 ${160 - 90} 172 ${160 - 100} 170 C ${160 - 110} 165 ${160 - 115} 155 ${160 - 110} 145 C ${160 - 110} 142 ${160 - 105} 138 ${160 - 95} 130 C ${160 - 75} 115 ${160 - 45 * properties.bodyWidth} 100 ${160 - 45 * properties.bodyWidth} 95 C ${160 - 45 * properties.bodyWidth} 65 ${160 - 30 * properties.bodyWidth} 40 160 40 Z`}
             fill={fillColor}
             stroke="#222"
             strokeWidth={strokeWidth}
