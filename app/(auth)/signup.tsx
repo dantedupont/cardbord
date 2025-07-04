@@ -43,9 +43,9 @@ export default function SignupScreen() {
               uid: user.uid,
               email: user.email,
               username: defaultUsername,
-              // --- UPDATED: Set avatarUrl to an empty string ---
               avatarUrl: '', 
               createdAt: new Date(),
+              hasCompletedOnboarding: false, 
             });
           }
         } catch (error: any) {
@@ -95,6 +95,7 @@ export default function SignupScreen() {
         username: username,
         avatarUrl: '',
         createdAt: new Date(),
+        hasCompletedOnboarding: false, 
       });
 
       batch.set(usernameDocRef, { uid: user.uid });

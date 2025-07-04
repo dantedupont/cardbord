@@ -1,12 +1,13 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import throttle from 'lodash/throttle';
 import { useEffect, useState } from 'react';
 import { auth, db } from '../../firebase';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useModal } from '../context/ModalContext';
+import { useModal } from '../../context/ModalContext';
 
 type Game = {
   id: string;
@@ -23,6 +24,7 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { showModal } = useModal();
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -30,7 +32,6 @@ export default function OnboardingScreen() {
         const { uid } = user;
         setLoading(true);
         try {
-          // --- NEW: Caching Logic ---
           const cachedGamesJSON = await AsyncStorage.getItem('topGames');
           const cachedTimestampJSON = await AsyncStorage.getItem('topGamesTimestamp');
           let topGamesData: Game[] = [];
@@ -113,6 +114,20 @@ export default function OnboardingScreen() {
       console.error("Error saving rating:", error);
     }
   }, 1000);
+  const handleDone = async () => {
+    if (!auth.currentUser) return;
+    const userDocRef = doc(db, 'users', auth.currentUser.uid);
+    try {
+      // Set the flag in the user's profile to true
+      await updateDoc(userDocRef, {
+        hasCompletedOnboarding: true,
+      });
+      // Navigate to the profile screen after updating the flag
+      router.replace('/profile');
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -157,6 +172,9 @@ export default function OnboardingScreen() {
         )}
         style={styles.list}
       />
+      <Pressable style={styles.doneButton} onPress={handleDone}>
+        <Text style={styles.doneButtonText}>Done</Text>
+      </Pressable>
     </View>
   );
 }
@@ -230,6 +248,19 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  doneButton: {
+    backgroundColor: '#28a745',
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 50,
+    marginVertical: 20,
+    alignSelf: 'center',
+  },
+  doneButtonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

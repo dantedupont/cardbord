@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
-import RatingModal from '../../components/RatingModal';
+import RatingModal from '../components/RatingModal';
 
 // Define a type for the game object
 type Game = {
