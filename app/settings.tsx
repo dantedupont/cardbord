@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { deleteUser, signOut } from 'firebase/auth';
 import React from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { auth } from '../firebase';
 
 export default function SettingsScreen() {
-  const router = useRouter();
 
   const handleSignOut = () => {
     signOut(auth).catch((error) => console.error("Sign Out Error", error));

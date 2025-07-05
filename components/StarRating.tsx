@@ -13,7 +13,6 @@ type StarRatingProps = {
 const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
   const [rating, setRating] = useState<number>(0);
   const [tempRating, setTempRating] = useState<number>(0);
-  // --- NEW: Use a ref to track the last rating that triggered a haptic ---
   const lastHapticRating = useRef<number>(0);
 
   const calculateRating = (xPosition: number): number => {

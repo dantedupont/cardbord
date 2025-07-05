@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import { onAuthStateChanged, sendEmailVerification, User } from 'firebase/auth';
 import { doc, getDoc, writeBatch } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MeepleAvatar from '../../components/MeepleAvatar';
 import { auth, db } from '../../firebase';
-// --- NEW: Import Stack for header configuration ---
-import { Stack, useRouter } from 'expo-router';
 
 type UserProfile = {
   username: string;
