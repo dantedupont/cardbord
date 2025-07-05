@@ -1,15 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, signInWithCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { doc, getDoc, writeBatch } from 'firebase/firestore';
 import { debounce } from 'lodash';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Linking, Platform, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { auth, db } from '../../firebase';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const getClientId = () => {
+  if (Constants.expoConfig?.extra?.eas?.projectId) {
+    if (Platform.OS === 'ios') return process.env.EXPO_PUBLIC_IOS_CLIENT_ID;
+    if (Platform.OS === 'android') return process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID;
+  }
+  return process.env.EXPO_PUBLIC_EXPO_GO_IOS_CLIENT_ID;
+};
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'short';
 
@@ -23,22 +32,16 @@ export default function SignupScreen() {
 
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [usernameTouched, setUsernameTouched] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
+    clientId: getClientId(),
   });
 
   const debouncedCheckUsername = useRef(
     debounce(async (text: string) => {
-      if (text.length === 0) {
-        setUsernameStatus('idle');
-        return;
-      }
-      if (text.length < 3) {
-        setUsernameStatus('short');
-        return;
-      }
+      if (text.length === 0) { setUsernameStatus('idle'); return; }
+      if (text.length < 3) { setUsernameStatus('short'); return; }
       setUsernameStatus('checking');
       const usernameDocRef = doc(db, "usernames", text.toLowerCase());
       const usernameDoc = await getDoc(usernameDocRef);
@@ -55,41 +58,7 @@ export default function SignupScreen() {
 
   useEffect(() => {
     const handleGoogleResponse = async () => {
-      if (response?.type === 'success') {
-        setLoading(true);
-        const { id_token } = response.params;
-        const credential = GoogleAuthProvider.credential(id_token);
-        
-        try {
-          const userCredential = await signInWithCredential(auth, credential);
-          const user = userCredential.user;
-
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDoc = await getDoc(userDocRef);
-
-          if (!userDoc.exists()) {
-            const randomString = Math.random().toString(36).substring(2, 7);
-            const defaultUsername = `user_${randomString}`;
-            
-            await setDoc(userDocRef, {
-              uid: user.uid,
-              email: user.email,
-              username: defaultUsername,
-              avatarUrl: '', 
-              createdAt: new Date(),
-              hasCompletedOnboarding: false, 
-            });
-          }
-        } catch (error: any) {
-          Alert.alert("Sign-In Failed", "Could not sign in with Google.");
-        } finally {
-          setLoading(false);
-        }
-      } else if (response?.type === 'error') {
-        Alert.alert("Sign-In Failed", "An error occurred during Google sign-in.");
-      }
     };
-    
     handleGoogleResponse();
   }, [response]);
 
@@ -106,12 +75,15 @@ export default function SignupScreen() {
       Alert.alert("Invalid Username", "Please choose an available username.");
       return;
     }
+    if (!agreedToTerms) {
+      Alert.alert("Agreement Required", "You must agree to the Privacy Policy to create an account.");
+      return;
+    }
 
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
       await sendEmailVerification(user);
 
       const userProfileRef = doc(db, "users", user.uid);
@@ -119,22 +91,13 @@ export default function SignupScreen() {
       const batch = writeBatch(db);
       
       batch.set(userProfileRef, {
-        uid: user.uid,
-        email: user.email,
-        username: username,
-        avatarUrl: '',
-        createdAt: new Date(),
-        hasCompletedOnboarding: false,
+        uid: user.uid, email: user.email, username: username, avatarUrl: '',
+        createdAt: new Date(), hasCompletedOnboarding: false,
       });
       batch.set(usernameDocRef, { uid: user.uid });
       await batch.commit();
 
-      // --- NEW: Inform the user to check their email ---
-      Alert.alert(
-        "Account Created!",
-        "Please check your inbox to verify your email address."
-      );
-      
+      Alert.alert("Account Created!", "Please check your inbox to verify your email address.");
     } catch (error: any) {
       Alert.alert("Signup Failed", error.message);
     } finally {
@@ -144,16 +107,11 @@ export default function SignupScreen() {
 
   const renderUsernameFeedback = () => {
     switch (usernameStatus) {
-      case 'checking':
-        return <Text style={styles.feedbackText}>Checking...</Text>;
-      case 'available':
-        return <Text style={[styles.feedbackText, styles.availableText]}>Username is available!</Text>;
-      case 'taken':
-        return <Text style={[styles.feedbackText, styles.errorText]}>This username is already taken.</Text>;
-      case 'short':
-        return <Text style={[styles.feedbackText, styles.errorText]}>Username must be at least 3 characters.</Text>;
-      default:
-        return null;
+      case 'checking': return <Text style={styles.feedbackText}>Checking...</Text>;
+      case 'available': return <Text style={[styles.feedbackText, styles.availableText]}>Username is available!</Text>;
+      case 'taken': return <Text style={[styles.feedbackText, styles.errorText]}>This username is already taken.</Text>;
+      case 'short': return <Text style={[styles.feedbackText, styles.errorText]}>Username must be at least 3 characters.</Text>;
+      default: return null;
     }
   };
 
@@ -163,64 +121,41 @@ export default function SignupScreen() {
         <Text style={styles.title}>Create Account</Text>
         
         <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.inputField}
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            onFocus={() => setUsernameTouched(true)}
-            autoCapitalize="none"
-            placeholderTextColor="#888"
-          />
+          <TextInput style={styles.inputField} placeholder="Username" value={username} onChangeText={setUsername} onFocus={() => setUsernameTouched(true)} autoCapitalize="none" placeholderTextColor="#888" />
           <View style={styles.validationIcon}>
-            {usernameStatus === 'checking' ? (
-              <ActivityIndicator size="small" />
-            ) : usernameStatus === 'available' || usernameStatus === 'taken' ? (
-              <Ionicons
-                name={usernameStatus === 'available' ? 'checkmark-circle' : 'close-circle'}
-                size={24}
-                color={usernameStatus === 'available' ? '#28a745' : '#dc3545'}
-              />
-            ) : null}
+            {usernameStatus === 'checking' ? <ActivityIndicator size="small" /> : usernameStatus === 'available' || usernameStatus === 'taken' ? <Ionicons name={usernameStatus === 'available' ? 'checkmark-circle' : 'close-circle'} size={24} color={usernameStatus === 'available' ? '#28a745' : '#dc3545'} /> : null}
           </View>
         </View>
         {usernameTouched && <View style={styles.feedbackContainer}>{renderUsernameFeedback()}</View>}
 
         <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.inputField}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholderTextColor="#888"
-          />
+          <TextInput style={styles.inputField} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholderTextColor="#888" />
         </View>
 
         <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.inputField}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!isPasswordVisible}
-            placeholderTextColor="#888"
-          />
-          <Pressable onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
-            <Ionicons name={isPasswordVisible ? 'eye-off' : 'eye'} size={24} color="#888" />
-          </Pressable>
+          <TextInput style={styles.inputField} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} placeholderTextColor="#888" />
+          <Pressable onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}><Ionicons name={isPasswordVisible ? 'eye-off' : 'eye'} size={24} color="#888" /></Pressable>
         </View>
         <Text style={styles.inputHint}>6 character minimum</Text>
+
+        <View style={styles.termsContainer}>
+          <Pressable onPress={() => setAgreedToTerms(!agreedToTerms)} style={styles.checkbox}>
+            {agreedToTerms && <View style={styles.checkboxChecked} />}
+          </Pressable>
+          <Text style={styles.termsText}>
+            I agree to the{' '}
+            <Text style={styles.linkText} onPress={() => Linking.openURL('https://cardbord-4d787.web.app/privacy.html')}>
+              Privacy Policy
+            </Text>.
+          </Text>
+        </View>
 
         <Pressable style={styles.button} onPress={handleEmailSignup} disabled={loading || usernameStatus !== 'available'}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
         </Pressable>
 
         <View style={styles.separatorContainer}>
-          <View style={styles.separator} />
-          <Text style={styles.separatorText}>or</Text>
-          <View style={styles.separator} />
+          <View style={styles.separator} /><Text style={styles.separatorText}>or</Text><View style={styles.separator} />
         </View>
 
         <Pressable style={[styles.button, styles.googleButton]} disabled={!request || loading} onPress={() => promptAsync()}>
@@ -294,6 +229,38 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#dc3545',
+  },
+  checkbox: { 
+    width: 20, 
+    height: 20, 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 4, 
+    marginRight: 12, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  checkboxChecked: { 
+    width: 12, 
+    height: 12, 
+    backgroundColor: '#007AFF', 
+    borderRadius: 2 
+  },
+  termsContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 20, 
+    marginTop: -10 
+  },
+  termsText: { 
+    flex: 1, 
+    fontSize: 12, 
+    color: '#6c757d', 
+    lineHeight: 18 
+  },
+  linkText: { 
+    color: '#007AFF', 
+    textDecorationLine: 'underline' 
   },
   button: {
     height: 50,
