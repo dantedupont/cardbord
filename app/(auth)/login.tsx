@@ -1,13 +1,27 @@
 import * as Google from 'expo-auth-session/providers/google';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { auth, db } from '../../firebase';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const getClientId = () => {
+  if (Constants.expoConfig?.extra?.eas?.projectId) {
+    // This is a custom development build.
+    if (Platform.OS === 'ios') {
+      return process.env.EXPO_PUBLIC_IOS_CLIENT_ID;
+    } else if (Platform.OS === 'android') {
+      return process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID;
+    }
+  }
+  // This is running in the Expo Go app.
+  return process.env.EXPO_PUBLIC_EXPO_GO_IOS_CLIENT_ID;
+};
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -16,8 +30,7 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
+    clientId: getClientId(),
   });
 
   useEffect(() => {
@@ -28,33 +41,24 @@ export default function LoginScreen() {
         const credential = GoogleAuthProvider.credential(id_token);
         
         try {
-          // 1. Sign the user in with the Google credential
           const userCredential = await signInWithCredential(auth, credential);
           const user = userCredential.user;
-          console.log('User signed in with Google:', user.uid);
-
-          // 2. Check if a profile document already exists for this user
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userDocRef);
 
-          // 3. If the document does NOT exist, create one
           if (!userDoc.exists()) {
-            console.log('New Google user, creating profile...');
             const randomString = Math.random().toString(36).substring(2, 7);
             const defaultUsername = `user_${randomString}`;
-            const avatarUrl = `https://api.dicebear.com/8.x/pixel-art/svg?seed=${user.uid}`;
-
+            
             await setDoc(userDocRef, {
               uid: user.uid,
               email: user.email,
               username: defaultUsername,
-              avatarUrl: avatarUrl,
+              avatarUrl: '',
               createdAt: new Date(),
+              hasCompletedOnboarding: false,
             });
-            console.log('User profile created in Firestore!');
           }
-          // If the profile already exists, we do nothing. The user is simply logged in.
-
         } catch (error: any) {
           console.error("Google Sign-In Error:", error);
           Alert.alert("Sign-In Failed", "Could not sign in with Google.");
@@ -70,6 +74,10 @@ export default function LoginScreen() {
   }, [response]);
 
   const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
     setLoading(true);
     signInWithEmailAndPassword(auth, email, password)
       .catch((error) => {
@@ -103,7 +111,7 @@ export default function LoginScreen() {
           placeholderTextColor="#888"
         />
 
-       <Pressable style={styles.forgotPasswordButton} onPress={() => router.push('/(auth)/forgot-password')}>
+        <Pressable style={styles.forgotPasswordButton} onPress={() => router.push('/(auth)/forgot-password')}>
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </Pressable>
 
@@ -121,7 +129,7 @@ export default function LoginScreen() {
           {loading ? <ActivityIndicator /> : <Text style={[styles.buttonText, styles.googleButtonText]}>Continue with Google</Text>}
         </Pressable>
 
-        <Pressable style={styles.linkButton} onPress={() => router.push('/(auth)/signup')} disabled={loading}>
+        <Pressable style={styles.linkButton} onPress={() => router.push('/(auth)/signup')}>
           <Text style={styles.linkButtonText}>Don&apos;t have an account? Sign Up</Text>
         </Pressable>
       </View>
@@ -167,7 +175,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginTop: 8,
   },
   buttonText: {
     color: '#fff',
