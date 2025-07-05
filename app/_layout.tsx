@@ -61,7 +61,7 @@ export default function RootLayout() {
     };
 
     checkOnboardingAndRoute();
-  }, [user, isAuthLoading]); // This logic now correctly depends on the user state
+  }, [user, isAuthLoading, router]); // This logic now correctly depends on the user state
   
   if (!loaded || isAuthLoading) {
     return (
