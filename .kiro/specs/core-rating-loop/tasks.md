@@ -9,7 +9,7 @@
 
 - [ ] 2. Enhance the RatingModal component with new fields
 
-  - [ ] 2.1 Add date picker functionality to RatingModal
+  - [x] 2.1 Add date picker functionality to RatingModal
 
     - Install and configure date picker component for cross-platform support
     - Add date state management and default to current date
