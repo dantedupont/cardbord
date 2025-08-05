@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useModal } from '../../context/ModalContext';
+import { UserRating } from '../../types/rating';
 
 type Game = {
   id: string;
@@ -68,7 +69,8 @@ export default function OnboardingScreen() {
           const ratingsMap = new Map<string, number>();
           ratingDocs.forEach((docSnap, index) => {
             if (docSnap.exists()) {
-              ratingsMap.set(topGamesData[index].id, docSnap.data().rating);
+              const ratingData = docSnap.data() as UserRating;
+              ratingsMap.set(topGamesData[index].id, ratingData.rating);
             }
           });
     
@@ -94,16 +96,21 @@ export default function OnboardingScreen() {
     return () => unsubscribe();
   }, []);
   
-  const throttledSaveRating = throttle(async (gameId: string, rating: number) => {
+  const throttledSaveRating = throttle(async (gameId: string, rating: number, datePlayed: Date = new Date(), review?: string, favorited?: boolean) => {
     if (!auth.currentUser) return;
     const { uid } = auth.currentUser;
 
     try {
       const ratingDocRef = doc(db, 'users', uid, 'ratings', gameId);
-      await setDoc(ratingDocRef, {
+      const ratingData: UserRating = {
         rating: rating,
+        datePlayed: datePlayed,
+        review: review,
+        favorited: favorited,
         createdAt: new Date(),
-      });
+      };
+      
+      await setDoc(ratingDocRef, ratingData);
 
       setGames(prevGames =>
         prevGames.map(g =>
@@ -154,7 +161,7 @@ export default function OnboardingScreen() {
         data={games}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Pressable onPress={() => showModal(item, (rating) => throttledSaveRating(item.id, rating))} style={styles.gameItem}>
+          <Pressable onPress={() => showModal(item, (rating) => throttledSaveRating(item.id, rating, new Date(), undefined, false))} style={styles.gameItem}>
             {item.imageUrl ? (
               <Image source={{ uri: item.imageUrl }} style={styles.gameImage} />
             ) : (
