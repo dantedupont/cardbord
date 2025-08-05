@@ -131,12 +131,14 @@ const RatingModal: React.FC<RatingModalProps> = ({
           { transform: [{ translateY: panelPosition }] },
         ]}
       >
-        {/* --- FIX: The panResponder is now attached to this handle ONLY --- */}
-        <View {...panResponder.panHandlers} style={styles.dragHandle}>
-          <View style={styles.grabber} />
+        {/* Draggable area covering drag handle and title */}
+        <View {...panResponder.panHandlers} style={styles.draggableTopSection}>
+          <View style={styles.dragHandle}>
+            <View style={styles.grabber} />
+          </View>
+          <Text style={styles.title}>{gameTitle}</Text>
         </View>
-        <Text style={styles.title}>{gameTitle}</Text>
-        
+          
         <View style={styles.controlsRow}>
           <View style={styles.dateSection}>
             <Text style={styles.dateLabel}>Date Played</Text>
@@ -214,7 +216,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     alignItems: "center",
   },
-  // --- NEW: A dedicated touch area for the drag gesture ---
+  // --- NEW: Expanded draggable area covering the entire top section ---
+  draggableTopSection: {
+    width: '100%',
+    alignItems: 'center',
+  },
   dragHandle: {
     width: 100,
     paddingTop: 12,

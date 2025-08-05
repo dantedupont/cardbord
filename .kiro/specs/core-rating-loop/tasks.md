@@ -31,21 +31,21 @@
 
 - [ ] 3. Transform onboarding screen into carousel format
 
-  - [ ] 3.1 Implement horizontal FlatList with pagination
+  - [x] 3.1 Implement horizontal FlatList with pagination
 
     - Replace current vertical list with horizontal FlatList
     - Configure snap-to-interval and pagination behavior
     - Add smooth scrolling animations between cards
     - _Requirements: 1.1, 1.2_
 
-  - [ ] 3.2 Add blurred background image to game cards
+  - [x] 3.2 Add blurred background image to game cards
 
     - Install expo-blur package if not already available
     - Create GameCard component with blurred background image
     - Implement fallback for games without images
     - _Requirements: 1.4_
 
-  - [ ] 3.3 Implement infinite scroll functionality
+  - [x] 3.3 Implement infinite scroll functionality
     - Add logic to detect when user approaches end of loaded games
     - Create fetchMoreGames function to load additional games in batches
     - Implement loading states for new game fetches
