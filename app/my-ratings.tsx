@@ -4,6 +4,7 @@ import { collection, doc, getDoc, getDocs, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { auth, db } from '../firebase';
+import { UserRating } from '../types/rating';
 
 // Define the types for our data
 type RatedGame = {
@@ -39,10 +40,13 @@ export default function MyRatingsScreen() {
         collection(db, 'users', userId, 'ratings')
       );
       const ratingsSnapshot = await getDocs(ratingsQuery);
-      const userRatings = ratingsSnapshot.docs.map(doc => ({
-        gameId: doc.id,
-        rating: doc.data().rating,
-      }));
+      const userRatings = ratingsSnapshot.docs.map(doc => {
+        const data = doc.data() as UserRating;
+        return {
+          gameId: doc.id,
+          rating: data.rating,
+        };
+      });
 
       // 2. For each rating, fetch the full game details
       const gamePromises = userRatings.map(rating => 

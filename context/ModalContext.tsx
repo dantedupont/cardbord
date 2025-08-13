@@ -1,15 +1,14 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 import RatingModal from '../components/RatingModal';
+import { OnRateCallback } from '../types/rating';
 
 // Define a type for the game object
 type Game = {
   id: string;
   name: string;
   imageUrl?: string;
+  yearPublished?: number;
 };
-
-// Define a type for the onRate function
-type OnRateCallback = (rating: number) => void;
 
 // Define the shape of our context's state and functions
 type ModalContextType = {
@@ -60,10 +59,11 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
         <RatingModal
           visible={modalVisible}
           onClose={hideModal}
-          // --- FIX: Pass the stored callback function correctly ---
-          onRate={onRateCallback.fn}
+          // Wrapper function to maintain backward compatibility with current modal
+          onRate={(rating: number) => onRateCallback.fn(rating, new Date(), undefined, false)}
           gameTitle={selectedGame.name}
           imageUrl={selectedGame.imageUrl}
+          yearPublished={selectedGame.yearPublished}
         />
       )}
     </ModalContext.Provider>
