@@ -29,7 +29,7 @@
     - Add form validation before saving
     - _Requirements: 2.4, 2.5_
 
-- [ ] 3. Transform onboarding screen into carousel format
+- [x] 3. Transform onboarding screen into carousel format
 
   - [x] 3.1 Implement horizontal FlatList with pagination
 
@@ -51,65 +51,97 @@
     - Implement loading states for new game fetches
     - _Requirements: 1.3_
 
-- [ ] 4. Create the Diary screen for chronological play history
+- [x] 4. Create the Diary screen for chronological play history
 
-  - [ ] 4.1 Create DiaryScreen component structure
+  - [x] 4.1 Create DiaryScreen component structure
 
     - Create new screen file at app/diary.tsx
     - Set up navigation and screen header configuration
     - Create basic component structure with loading states
     - _Requirements: 3.1_
 
-  - [ ] 4.2 Implement diary data fetching logic
+  - [x] 4.2 Implement diary data fetching logic
 
     - Create function to fetch all user ratings with game details
     - Implement data sorting by datePlayed in descending order
     - Add error handling and loading states
     - _Requirements: 3.4_
 
-  - [ ] 4.3 Create DiaryEntry component for individual entries
+  - [x] 4.3 Create DiaryEntry component for individual entries
 
     - Design and implement card layout for diary entries
     - Display game image, name, rating, and date played
     - Handle missing game data gracefully
     - _Requirements: 3.2, 3.3_
 
-  - [ ] 4.4 Add empty state and navigation
+  - [x] 4.4 Add empty state and navigation
     - Create empty state component with encouraging message
     - Add navigation link from profile screen to diary
     - Implement pull-to-refresh functionality
     - _Requirements: 3.5_
 
-- [ ] 5. Create the Reviews screen for written reviews
+- [ ] 5. Enhance My Ratings screen with detailed game information
 
-  - [ ] 5.1 Create ReviewsScreen component structure
+  - [ ] 5.1 Create game detail modal component
+
+    - Create modal component that displays when user taps a rated game
+    - Include game name, image, and user's rating display
+    - Add close button and proper modal styling
+    - _Requirements: 4.2_
+
+  - [ ] 5.2 Add last played date and review display
+
+    - Show when the user last played the game (datePlayed)
+    - Display any review text the user has written
+    - Handle cases where no review exists
+    - Format dates in user-friendly format
+    - _Requirements: 4.2, 4.3_
+
+  - [ ] 5.3 Add navigation to game page
+
+    - Create "View Game Page" button in the modal
+    - Implement navigation to individual game pages (like /game/30549)
+    - Pass game ID to the game page route
+    - Style button to match app design
+    - _Requirements: 4.2_
+
+  - [ ] 5.4 Integrate modal with My Ratings screen
+    - Update existing My Ratings screen to show game list
+    - Add onPress handlers to open the detail modal
+    - Ensure proper data passing between list and modal
+    - Test modal opening/closing functionality
+    - _Requirements: 4.1, 4.2_
+
+- [ ] 6. Create the Reviews screen for written reviews
+
+  - [ ] 6.1 Create ReviewsScreen component structure
 
     - Create new screen file at app/my-reviews.tsx
     - Set up navigation and screen header configuration
     - Create basic component structure with loading states
     - _Requirements: 4.1_
 
-  - [ ] 5.2 Implement reviews data fetching logic
+  - [ ] 6.2 Implement reviews data fetching logic
 
     - Create function to fetch only ratings that include review text
     - Filter out ratings without reviews during data processing
     - Add error handling and loading states
     - _Requirements: 4.4_
 
-  - [ ] 5.3 Create ReviewEntry component for individual reviews
+  - [ ] 6.3 Create ReviewEntry component for individual reviews
 
     - Design and implement expandable card layout for reviews
     - Display game image, name, rating, review text, and date
     - Add character count display for reviews
     - _Requirements: 4.2, 4.3_
 
-  - [ ] 5.4 Add empty state and navigation
+  - [ ] 6.4 Add empty state and navigation
     - Create empty state component encouraging users to write reviews
     - Add navigation link from profile screen to reviews
     - Implement pull-to-refresh functionality
     - _Requirements: 4.5_
 
-- [ ] 6. Update navigation and integrate new screens
+- [ ] 7. Update navigation and integrate new screens
 
   - Add diary and reviews navigation options to profile screen
   - Update tab navigation if needed for new screens
@@ -117,7 +149,7 @@
   - Test navigation flow between all screens
   - _Requirements: 3.1, 4.1_
 
-- [ ] 7. Update onboarding screen to use enhanced rating modal
+- [ ] 8. Update onboarding screen to use enhanced rating modal
   - Modify the existing onboarding screen to pass enhanced rating callback
   - Update the throttledSaveRating function call to include new parameters
   - Test the complete onboarding flow with new rating data

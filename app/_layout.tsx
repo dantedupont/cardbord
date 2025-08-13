@@ -77,6 +77,14 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="diary" 
+            options={{ 
+              title: 'Gaming Diary',
+              headerStyle: { backgroundColor: '#f8f9fa' },
+              headerTitleStyle: { fontWeight: 'bold' },
+            }} 
+          />
           <Stack.Screen name="settings" />
           <Stack.Screen name="+not-found" />
         </Stack>

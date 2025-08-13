@@ -173,9 +173,9 @@ export default function OnboardingScreen() {
       const ratingData: UserRating = {
         rating: rating,
         datePlayed: datePlayed,
-        review: review,
-        favorited: favorited,
         createdAt: new Date(),
+        ...(review !== undefined && { review }),
+        ...(favorited !== undefined && { favorited }),
       };
       
       await setDoc(ratingDocRef, ratingData);

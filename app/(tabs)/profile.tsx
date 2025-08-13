@@ -133,6 +133,10 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.contentArea}>
+            <Pressable style={styles.menuButton} onPress={() => router.push('/diary')}>
+              <Text style={styles.menuButtonText}>Gaming Diary</Text>
+              <Ionicons name="chevron-forward" size={24} color="#6c757d" />
+            </Pressable>
             <Pressable style={styles.menuButton} onPress={() => router.push('/my-ratings')}>
               <Text style={styles.menuButtonText}>My Ratings</Text>
               <Ionicons name="chevron-forward" size={24} color="#6c757d" />
