@@ -7,6 +7,7 @@ type Game = {
   id: string;
   name: string;
   imageUrl?: string;
+  yearPublished?: number;
 };
 
 // Define the shape of our context's state and functions
@@ -62,6 +63,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
           onRate={(rating: number) => onRateCallback.fn(rating, new Date(), undefined, false)}
           gameTitle={selectedGame.name}
           imageUrl={selectedGame.imageUrl}
+          yearPublished={selectedGame.yearPublished}
         />
       )}
     </ModalContext.Provider>

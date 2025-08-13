@@ -20,7 +20,8 @@ type Game = {
   name: string;
   usersRated: number;
   imageUrl?: string;
-  userRating?: number | null; 
+  userRating?: number | null;
+  yearPublished?: number;
 };
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds

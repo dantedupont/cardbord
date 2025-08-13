@@ -16,7 +16,7 @@
     - Integrate date picker UI into the modal layout
     - _Requirements: 2.1_
 
-  - [ ] 2.2 Add review text area to RatingModal
+  - [x] 2.2 Add review text area to RatingModal
 
     - Create multi-line TextInput component with character limit
     - Add email verification check to conditionally enable/disable review field
