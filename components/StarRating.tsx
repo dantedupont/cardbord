@@ -8,12 +8,13 @@ const STAR_SIZE = 60;
 
 type StarRatingProps = {
   onRatingChange: (rating: number) => void;
+  /** Pre-fills the stars, e.g. when editing an existing rating. */
+  initialRating?: number;
 };
 
-const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
-  const [rating, setRating] = useState<number>(0);
-  const [tempRating, setTempRating] = useState<number>(0);
-  const lastHapticRating = useRef<number>(0);
+const StarRating: React.FC<StarRatingProps> = ({ onRatingChange, initialRating = 0 }) => {
+  const [tempRating, setTempRating] = useState<number>(initialRating);
+  const lastHapticRating = useRef<number>(initialRating);
 
   const calculateRating = (xPosition: number): number => {
     const starWidth = STAR_SIZE;
@@ -49,7 +50,6 @@ const StarRating: React.FC<StarRatingProps> = ({ onRatingChange }) => {
       },
       onPanResponderRelease: (evt: GestureResponderEvent) => {
         const finalRating = calculateRating(evt.nativeEvent.locationX);
-        setRating(finalRating);
         setTempRating(finalRating);
         onRatingChange(finalRating);
         // Reset the haptic tracker on release

@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ActivityIndicator, Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useModal } from '../../context/ModalContext';
-import { UserRating } from '../../types/rating';
+import { ExistingRating, UserRating } from '../../types/rating';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.8;
@@ -21,8 +21,25 @@ type Game = {
   usersRated: number;
   imageUrl?: string;
   userRating?: number | null;
+  existingRating?: ExistingRating;
   yearPublished?: number;
 };
+
+const toDate = (value: unknown): Date | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Date) return value;
+  if (typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  return undefined;
+};
+
+const toExistingRating = (data: UserRating): ExistingRating => ({
+  rating: data.rating,
+  datePlayed: toDate(data.datePlayed),
+  review: data.review,
+  favorited: data.favorited,
+});
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -75,18 +92,18 @@ export default function OnboardingScreen() {
             getDoc(doc(db, 'users', uid, 'ratings', game.id))
           );
           const ratingDocs = await Promise.all(ratingPromises);
-          const ratingsMap = new Map<string, number>();
+          const ratingsMap = new Map<string, ExistingRating>();
           ratingDocs.forEach((docSnap, index) => {
             if (docSnap.exists()) {
-              const ratingData = docSnap.data() as UserRating;
-              ratingsMap.set(topGamesData[index].id, ratingData.rating);
+              ratingsMap.set(topGamesData[index].id, toExistingRating(docSnap.data() as UserRating));
             }
           });
     
           // Merge ratings into the game data
           const mergedGames = topGamesData.map(game => ({
             ...game,
-            userRating: ratingsMap.get(game.id) ?? null,
+            userRating: ratingsMap.get(game.id)?.rating ?? null,
+            existingRating: ratingsMap.get(game.id),
           }));
     
           setGames(mergedGames);
@@ -143,18 +160,18 @@ export default function OnboardingScreen() {
         getDoc(doc(db, 'users', uid, 'ratings', game.id))
       );
       const ratingDocs = await Promise.all(ratingPromises);
-      const ratingsMap = new Map<string, number>();
+      const ratingsMap = new Map<string, ExistingRating>();
       ratingDocs.forEach((docSnap, index) => {
         if (docSnap.exists()) {
-          const ratingData = docSnap.data() as UserRating;
-          ratingsMap.set(newGames[index].id, ratingData.rating);
+          ratingsMap.set(newGames[index].id, toExistingRating(docSnap.data() as UserRating));
         }
       });
 
       // Merge ratings into game data
       const newGamesWithRatings = newGames.map(game => ({
         ...game,
-        userRating: ratingsMap.get(game.id) ?? null,
+        userRating: ratingsMap.get(game.id)?.rating ?? null,
+        existingRating: ratingsMap.get(game.id),
       }));
 
       setGames(prevGames => [...prevGames, ...newGamesWithRatings]);
@@ -171,19 +188,25 @@ export default function OnboardingScreen() {
 
     try {
       const ratingDocRef = doc(db, 'users', uid, 'ratings', gameId);
+      const existingDoc = await getDoc(ratingDocRef);
+      const now = new Date();
       const ratingData: UserRating = {
-        rating: rating,
-        datePlayed: datePlayed,
-        createdAt: new Date(),
-        ...(review !== undefined && { review }),
-        ...(favorited !== undefined && { favorited }),
+        rating,
+        datePlayed,
+        review: review ?? '',
+        favorited: favorited ?? false,
+        // Keep the original createdAt when the user edits a rating
+        createdAt: toDate(existingDoc.data()?.createdAt) ?? now,
+        updatedAt: now,
       };
       
-      await setDoc(ratingDocRef, ratingData);
+      await setDoc(ratingDocRef, ratingData, { merge: true });
 
       setGames(prevGames =>
         prevGames.map(g =>
-          g.id === gameId ? { ...g, userRating: rating } : g
+          g.id === gameId
+            ? { ...g, userRating: rating, existingRating: { rating, datePlayed, review, favorited } }
+            : g
         )
       );
     } catch (error) {
@@ -251,7 +274,14 @@ export default function OnboardingScreen() {
         data={games}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Pressable onPress={() => showModal(item, (rating) => throttledSaveRating(item.id, rating, new Date(), undefined, false))} style={styles.gameCard}>
+          <Pressable
+            onPress={() => showModal(
+              item,
+              (rating, datePlayed, review, favorited) => throttledSaveRating(item.id, rating, datePlayed, review, favorited),
+              item.existingRating,
+            )}
+            style={styles.gameCard}
+          >
             <View style={styles.floatingCover}>
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.gameImage} />

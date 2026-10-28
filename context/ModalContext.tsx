@@ -1,6 +1,6 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 import RatingModal from '../components/RatingModal';
-import { OnRateCallback } from '../types/rating';
+import { ExistingRating, OnRateCallback } from '../types/rating';
 
 // Define a type for the game object
 type Game = {
@@ -12,8 +12,8 @@ type Game = {
 
 // Define the shape of our context's state and functions
 type ModalContextType = {
-  // showModal now accepts the callback
-  showModal: (game: Game, onRate: OnRateCallback) => void;
+  // showModal accepts the save callback and, optionally, the user's existing rating to edit
+  showModal: (game: Game, onRate: OnRateCallback, existingRating?: ExistingRating) => void;
   hideModal: () => void;
 };
 
@@ -34,11 +34,13 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   // State to hold the current onRate callback
   const [onRateCallback, setOnRateCallback] = useState<{ fn: OnRateCallback } | null>(null);
+  const [existingRating, setExistingRating] = useState<ExistingRating | undefined>(undefined);
 
-  const showModal = (game: Game, onRate: OnRateCallback) => {
+  const showModal = (game: Game, onRate: OnRateCallback, existing?: ExistingRating) => {
     setSelectedGame(game);
     // Store the callback function in a way that avoids stale closures
     setOnRateCallback({ fn: onRate });
+    setExistingRating(existing);
     setModalVisible(true);
   };
 
@@ -46,6 +48,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     setModalVisible(false);
     setSelectedGame(null);
     setOnRateCallback(null);
+    setExistingRating(undefined);
   };
 
   const value = { showModal, hideModal };
@@ -59,11 +62,11 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
         <RatingModal
           visible={modalVisible}
           onClose={hideModal}
-          // Wrapper function to maintain backward compatibility with current modal
-          onRate={(rating: number) => onRateCallback.fn(rating, new Date(), undefined, false)}
+          onRate={onRateCallback.fn}
           gameTitle={selectedGame.name}
           imageUrl={selectedGame.imageUrl}
           yearPublished={selectedGame.yearPublished}
+          existingRating={existingRating}
         />
       )}
     </ModalContext.Provider>

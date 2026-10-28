@@ -1,7 +1,10 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { onAuthStateChanged, User } from "firebase/auth";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Dimensions,
   Image,
@@ -15,6 +18,7 @@ import {
   View
 } from "react-native";
 import { auth } from "../firebase";
+import { ExistingRating, OnRateCallback } from "../types/rating";
 import StarRating from "./StarRating";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -23,10 +27,12 @@ const UPWARD_DRAG_LIMIT = -40;
 type RatingModalProps = {
   visible: boolean;
   onClose: () => void;
-  onRate: (rating: number, datePlayed: Date) => void;
+  onRate: OnRateCallback;
   gameTitle: string;
   imageUrl?: string;
   yearPublished?: number;
+  /** When editing, the values the form should start with. */
+  existingRating?: ExistingRating;
 };
 
 const RatingModal: React.FC<RatingModalProps> = ({
@@ -36,10 +42,12 @@ const RatingModal: React.FC<RatingModalProps> = ({
   gameTitle,
   imageUrl,
   yearPublished,
+  existingRating,
 }) => {
-  const [selectedRating, setSelectedRating] = useState(0);
-  const [datePlayed, setDatePlayed] = useState(new Date());
-  const [reviewText, setReviewText] = useState("");
+  const [selectedRating, setSelectedRating] = useState(existingRating?.rating ?? 0);
+  const [datePlayed, setDatePlayed] = useState(existingRating?.datePlayed ?? new Date());
+  const [reviewText, setReviewText] = useState(existingRating?.review ?? "");
+  const [favorited, setFavorited] = useState(existingRating?.favorited ?? false);
   const [user, setUser] = useState<User | null>(null);
   const [isReviewFocused, setIsReviewFocused] = useState(false);
 
@@ -89,10 +97,11 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      // Reset form state when modal opens
-      setSelectedRating(0);
-      setDatePlayed(new Date());
-      setReviewText("");
+      // Reset form state when modal opens (pre-filled when editing an existing rating)
+      setSelectedRating(existingRating?.rating ?? 0);
+      setDatePlayed(existingRating?.datePlayed ?? new Date());
+      setReviewText(existingRating?.review ?? "");
+      setFavorited(existingRating?.favorited ?? false);
       setIsReviewFocused(false);
 
       Animated.spring(panelPosition, {
@@ -101,7 +110,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible, panelPosition]);
+  }, [visible, panelPosition, existingRating]);
 
   const handleClose = () => {
     Animated.timing(panelPosition, {
@@ -141,8 +150,19 @@ const RatingModal: React.FC<RatingModalProps> = ({
     setSelectedRating(rating);
   };
 
+  const toggleFavorite = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFavorited((prev) => !prev);
+  };
+
   const handleSave = () => {
-    onRate(selectedRating, datePlayed);
+    if (selectedRating <= 0) {
+      Alert.alert("No Rating", "Tap or drag the stars to pick a rating first.");
+      return;
+    }
+    const review = user?.emailVerified ? reviewText.trim() : "";
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onRate(selectedRating, datePlayed, review.length > 0 ? review : undefined, favorited);
     handleClose();
   };
 
@@ -205,12 +225,28 @@ const RatingModal: React.FC<RatingModalProps> = ({
           
           <View style={styles.favoriteSection}>
             <Text style={styles.favoriteLabel}>Favorite</Text>
-            {/* Favorite button will be added here later */}
+            <Pressable
+              onPress={toggleFavorite}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityState={{ selected: favorited }}
+              accessibilityLabel={favorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Ionicons
+                name={favorited ? "heart" : "heart-outline"}
+                size={32}
+                color={favorited ? "#e0245e" : "#6c757d"}
+              />
+            </Pressable>
           </View>
         </View>
 
         <View style={styles.starsContainer}>
-          <StarRating onRatingChange={handleRatingChange} />
+          <StarRating
+            key={existingRating?.rating ?? 0}
+            initialRating={existingRating?.rating ?? 0}
+            onRatingChange={handleRatingChange}
+          />
         </View>
 
         <View style={styles.reviewSection}>

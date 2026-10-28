@@ -8,7 +8,7 @@ import {
   orderBy,
   query,
 } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -60,7 +60,7 @@ export default function DiaryScreen() {
     return display;
   };
 
-  const fetchDiaryEntries = async (userId: string) => {
+  const fetchDiaryEntries = useCallback(async (userId: string) => {
     try {
       setError(null);
 
@@ -139,7 +139,7 @@ export default function DiaryScreen() {
       setError("Failed to load diary entries. Please try again.");
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -159,7 +159,7 @@ export default function DiaryScreen() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchDiaryEntries]);
 
   const handleRefresh = async () => {
     if (!auth.currentUser) return;

@@ -31,3 +31,11 @@ export interface DiaryEntry {
 
 // Enhanced callback type for rating modal
 export type OnRateCallback = (rating: number, datePlayed: Date, review?: string, favorited?: boolean) => void;
+
+// Values used to pre-fill the rating modal when a user edits an existing rating
+export interface ExistingRating {
+  rating?: number;
+  datePlayed?: Date;
+  review?: string;
+  favorited?: boolean;
+}

@@ -141,13 +141,6 @@ export default function ProfileScreen() {
               <Text style={styles.menuButtonText}>My Ratings</Text>
               <Ionicons name="chevron-forward" size={24} color="#6c757d" />
             </Pressable>
-            <Pressable 
-              style={styles.menuButton} 
-              onPress={() => router.push('/game/30549')}
-            >
-              <Text style={styles.menuButtonText}>Test Game Page (Pandemic)</Text>
-              <Ionicons name="chevron-forward" size={24} color="#6c757d" />
-            </Pressable>
           </View>
 
           {editMode && (

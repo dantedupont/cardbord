@@ -1,8 +1,9 @@
-import { Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { auth, db } from '../firebase';
 import { UserRating } from '../types/rating';
 
@@ -17,6 +18,7 @@ type RatedGame = {
 export default function MyRatingsScreen() {
   const [ratedGames, setRatedGames] = useState<RatedGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Listen for auth state to ensure we have a user
@@ -89,7 +91,10 @@ export default function MyRatingsScreen() {
         data={ratedGames}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.gameItem}>
+          <Pressable
+            style={({ pressed }) => [styles.gameItem, pressed && styles.gameItemPressed]}
+            onPress={() => router.push(`/game/${item.id}`)}
+          >
             {item.imageUrl ? (
               <Image source={{ uri: item.imageUrl }} style={styles.gameImage} />
             ) : (
@@ -101,7 +106,8 @@ export default function MyRatingsScreen() {
             <View style={styles.ratingBadge}>
               <Text style={styles.ratingText}>{item.userRating.toFixed(1)}</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color="#adb5bd" style={styles.chevron} />
+          </Pressable>
         )}
         ListHeaderComponent={<Text style={styles.title}>All Rated Games</Text>}
         ListEmptyComponent={<Text style={styles.emptyText}>You haven&apos;t rated any games yet.</Text>}
@@ -143,6 +149,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 3,
+  },
+  gameItemPressed: {
+    opacity: 0.7,
+  },
+  chevron: {
+    marginLeft: 6,
   },
   gameImage: {
     width: 50,
